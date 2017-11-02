@@ -36,7 +36,7 @@ fun main(args: Array<String>) {
         println(solution)
     }
 
-    println(time)
+    println("Running time: $time")
 }
 
 private fun hash(any: Any, times: Int = 0) = Math.abs( (any.toString() + times.toString()).hashCode() )
