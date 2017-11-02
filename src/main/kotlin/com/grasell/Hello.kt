@@ -28,7 +28,9 @@ fun main(args: Array<String>) {
             Slot("DST", 1)
     )
 
-    val solution = DraftSack().solve(players, hash(players), slots)
+    val budget = 50_000
+
+    val solution = DraftSack().solve(players, budget, slots)
     println(solution)
 }
 
