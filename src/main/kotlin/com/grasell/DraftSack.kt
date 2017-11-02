@@ -6,51 +6,49 @@ import kotlinx.collections.immutable.toImmutableList
 
 val emptyTeam = Team(immutableListOf())
 
-class DraftSack {
 
-    fun solve(players: List<Player>, budget: Int, slots: List<Slot>): Team? {
-        val memoization = mutableMapOf<Constraint, Team?>()
+fun solveDraftsack(players: List<Player>, budget: Int, slots: List<Slot>): Team? {
+    val memoization = mutableMapOf<Constraint, Team?>()
 
-        return solveRecursive(Constraint(slots.toImmutableList(), players.toImmutableList(), budget), memoization)
+    return solveRecursive(Constraint(slots.toImmutableList(), players.toImmutableList(), budget), memoization)
+}
+
+private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Constraint, Team?>): Team? {
+    if (constraint.budget < 0) return null
+    if (constraint.players.isEmpty()) return emptyTeam // no players -> empty team
+    println("Players: ${constraint.players.size}")
+
+    val memoizedResult = memoization[constraint]
+    if (memoizedResult != null) {
+        return memoizedResult
     }
 
-    private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Constraint, Team?>): Team? {
-        if (constraint.budget < 0) return null
-        if (constraint.players.isEmpty()) return emptyTeam // no players -> empty team
-        println("Players: ${constraint.players.size}")
+    // Actually calculate it.  What a drag.
+    var result: Team? = null
 
-        val memoizedResult = memoization[constraint]
-        if (memoizedResult != null) {
-            return memoizedResult
-        }
+    // If we skip this player
+    val playersWithoutCurrent = constraint.players.pop()
+    val teamFromSkippingPlayer = solveRecursive(constraint.copy(players = playersWithoutCurrent), memoization)
 
-        // Actually calculate it.  What a drag.
-        var result: Team? = null
+    // Try putting this player into the slots they fit
+    val currentPlayer = constraint.players.last()
+    val budgetAfterPlayer = constraint.budget - currentPlayer.cost
+    // Find intersection between slots in our constraint and slots the player fits
+    val slotFits = constraint.slots.asSequence().filter{ it.size > 0 && it.fitsPlayer(currentPlayer) }
+    val teamFromSlottingPlayer = slotFits.map{ it.slotType }.map {
+        val newSlots = copySlots(constraint.slots, it)
+        val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization)
+        potentialTeam?.withPlayer(currentPlayer)
+    }.maxBy { it?.score ?: -1 }
 
-        // If we skip this player
-        val playersWithoutCurrent = constraint.players.pop()
-        val teamFromSkippingPlayer = solveRecursive(constraint.copy(players = playersWithoutCurrent), memoization)
+    result = getBest(teamFromSkippingPlayer, teamFromSlottingPlayer)
 
-        // Try putting this player into the slots they fit
-        val currentPlayer = constraint.players.last()
-        val budgetAfterPlayer = constraint.budget - currentPlayer.cost
-        // Find intersection between slots in our constraint and slots the player fits
-        val slotFits = constraint.slots.asSequence().filter{ it.size > 0 && it.fitsPlayer(currentPlayer) }
-        val teamFromSlottingPlayer = slotFits.map{ it.slotType }.map {
-            val newSlots = copySlots(constraint.slots, it)
-            val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization)
-            potentialTeam?.withPlayer(currentPlayer)
-        }.maxBy { it?.score ?: -1 }
+    if (result == null) result = emptyTeam // Best we can do is an empty team :(
 
-        result = getBest(teamFromSkippingPlayer, teamFromSlottingPlayer)
+    memoization[constraint] = result
+    println("memoized table now at ${memoization.size}")
 
-        if (result == null) result = emptyTeam // Best we can do is an empty team :(
-
-        memoization[constraint] = result
-        println("memoized table now at ${memoization.size}")
-
-        return result
-    }
+    return result
 }
 
 private fun getBest(t1: Team?, t2: Team?): Team? {

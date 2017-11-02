@@ -32,7 +32,7 @@ fun main(args: Array<String>) {
     val budget = 50_000
 
      val time = measureTimeMillis {
-        val solution = DraftSack().solve(players, budget, slots)
+        val solution = solveDraftsack(players, budget, slots)
         println(solution)
     }
 
