@@ -83,7 +83,7 @@ fun <T> ImmutableList<T>.pop() = removeAt(lastIndex)
 
 data class Team(val players: ImmutableList<Player>) {
     val score
-    get() = players.stream().mapToInt{ it.score }.sum()
+    get() = players.asSequence().map { it.score }.sum()
 
     fun withPlayer(player: Player) = copy(players = players.add(player))
 

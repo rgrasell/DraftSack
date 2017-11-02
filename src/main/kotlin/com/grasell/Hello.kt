@@ -2,6 +2,7 @@ package com.grasell
 
 import kotlinx.collections.immutable.immutableListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlin.system.measureTimeMillis
 
 fun main(args: Array<String>) {
     println("Hello, World")
@@ -30,8 +31,12 @@ fun main(args: Array<String>) {
 
     val budget = 50_000
 
-    val solution = DraftSack().solve(players, budget, slots)
-    println(solution)
+     val time = measureTimeMillis {
+        val solution = DraftSack().solve(players, budget, slots)
+        println(solution)
+    }
+
+    println(time)
 }
 
 private fun hash(any: Any, times: Int = 0) = Math.abs( (any.toString() + times.toString()).hashCode() )
