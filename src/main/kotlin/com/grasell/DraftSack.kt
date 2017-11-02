@@ -18,37 +18,38 @@ private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Const
     if (constraint.players.isEmpty()) return emptyTeam // no players -> empty team
     println("Players: ${constraint.players.size}")
 
-    val memoizedResult = memoization[constraint]
-    if (memoizedResult != null) {
-        return memoizedResult
+    return memoization.getOrPut(constraint) {
+        val memoizedResult = memoization[constraint]
+        if (memoizedResult != null) {
+            return memoizedResult
+        }
+
+        // Actually calculate it.  What a drag.
+        var result: Team? = null
+
+        // If we skip this player
+        val playersWithoutCurrent = constraint.players.pop()
+        val teamFromSkippingPlayer = solveRecursive(constraint.copy(players = playersWithoutCurrent), memoization)
+
+        // Try putting this player into the slots they fit
+        val currentPlayer = constraint.players.last()
+        val budgetAfterPlayer = constraint.budget - currentPlayer.cost
+        // Find intersection between slots in our constraint and slots the player fits
+        val slotFits = constraint.slots.asSequence().filter{ it.size > 0 && it.fitsPlayer(currentPlayer) }
+        val teamFromSlottingPlayer = slotFits.map{ it.slotType }.map {
+            val newSlots = copySlots(constraint.slots, it)
+            val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization)
+            potentialTeam?.withPlayer(currentPlayer)
+        }.maxBy { it?.score ?: -1 }
+
+        result = getBest(teamFromSkippingPlayer, teamFromSlottingPlayer)
+
+        if (result == null) result = emptyTeam // Best we can do is an empty team :(
+
+        println("memoized table now at ${memoization.size}")
+
+        result
     }
-
-    // Actually calculate it.  What a drag.
-    var result: Team? = null
-
-    // If we skip this player
-    val playersWithoutCurrent = constraint.players.pop()
-    val teamFromSkippingPlayer = solveRecursive(constraint.copy(players = playersWithoutCurrent), memoization)
-
-    // Try putting this player into the slots they fit
-    val currentPlayer = constraint.players.last()
-    val budgetAfterPlayer = constraint.budget - currentPlayer.cost
-    // Find intersection between slots in our constraint and slots the player fits
-    val slotFits = constraint.slots.asSequence().filter{ it.size > 0 && it.fitsPlayer(currentPlayer) }
-    val teamFromSlottingPlayer = slotFits.map{ it.slotType }.map {
-        val newSlots = copySlots(constraint.slots, it)
-        val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization)
-        potentialTeam?.withPlayer(currentPlayer)
-    }.maxBy { it?.score ?: -1 }
-
-    result = getBest(teamFromSkippingPlayer, teamFromSlottingPlayer)
-
-    if (result == null) result = emptyTeam // Best we can do is an empty team :(
-
-    memoization[constraint] = result
-    println("memoized table now at ${memoization.size}")
-
-    return result
 }
 
 private fun getBest(t1: Team?, t2: Team?): Team? {
