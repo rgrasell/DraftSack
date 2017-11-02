@@ -72,10 +72,7 @@ private fun copySlots(slots: List<Slot>, typeToDecrement: String): ImmutableList
     }.toImmutableList()
 }
 
-data class Constraint(val slots: ImmutableList<Slot>, val players: ImmutableList<Player>, val budget: Int) {
-    val isInvalid
-    get() = budget < 0
-}
+data class Constraint(val slots: ImmutableList<Slot>, val players: ImmutableList<Player>, val budget: Int)
 
 fun <T> ImmutableList<T>.pop() = removeAt(lastIndex)
 
