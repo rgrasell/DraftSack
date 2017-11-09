@@ -36,7 +36,7 @@ private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Const
         val budgetAfterPlayer = constraint.budget - currentPlayer.cost
         // Find intersection between slots in our constraint and slots the player fits
         val slotFits = constraint.slots.asSequence().filter{ it.size > 0 && it.fitsPlayer(currentPlayer) }
-        val teamFromSlottingPlayer = slotFits.map{ it.slotType }.map {
+        val teamFromSlottingPlayer = slotFits.flatMap{ it.positionsAllowed.asSequence() }.map {
             val newSlots = copySlots(constraint.slots, it)
             val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization)
             potentialTeam?.withPlayer(currentPlayer)
@@ -65,7 +65,7 @@ private fun getBest(t1: Team?, t2: Team?): Team? {
 
 private fun copySlots(slots: List<Slot>, typeToDecrement: String): ImmutableList<Slot> {
     return slots.map {
-        if (it.slotType == typeToDecrement) {
+        if (it.positionsAllowed.contains(typeToDecrement)) {
             it.copy(size = it.size-1)
         } else {
             it
@@ -82,20 +82,11 @@ data class Team(val players: ImmutableList<Player>) {
     get() = players.asSequence().map { it.score }.sum()
 
     fun withPlayer(player: Player) = copy(players = players.add(player))
-
-//    fun withPlayer(player: Player) {
-//        val potentialSlots = slots.intersect(player.slotTypes)
-//
-//        var bestSolution = this
-//        for (replacedSlot in potentialSlots) {
-//            val newSolution = Team(slots, )
-//        }
-//    }
 }
 
-data class Slot(val slotType: String, val size: Int) {
-    fun fitsPlayer(player: Player) = player.slotTypes.contains(slotType)
+data class Slot(val positionsAllowed: Set<String>, val size: Int) {
+    fun fitsPlayer(player: Player) = positionsAllowed.contains(player.position)
 }
 
-data class Player(val name: String, val score: Int, val cost: Int, val slotTypes: ImmutableList<String>)
+data class Player(val name: String, val score: Int, val cost: Int, val position: String)
 

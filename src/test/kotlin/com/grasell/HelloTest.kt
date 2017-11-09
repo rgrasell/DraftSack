@@ -3,6 +3,4 @@ package com.grasell
 import org.junit.Test
 import kotlin.test.assertEquals
 
-class HelloTest {
-
-}
+class HelloTest
