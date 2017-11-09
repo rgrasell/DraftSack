@@ -79,7 +79,10 @@ fun <T> ImmutableList<T>.pop() = removeAt(lastIndex)
 
 data class Team(val players: ImmutableList<Player>) {
     val score
-    get() = players.asSequence().map { it.score }.sum()
+        get() = players.asSequence().map { it.score }.sum()
+
+    val cost
+        get() = players.asSequence().map { it.cost }.sum()
 
     fun withPlayer(player: Player) = copy(players = players.add(player))
 }
@@ -88,5 +91,6 @@ data class Slot(val positionsAllowed: Set<String>, val size: Int) {
     fun fitsPlayer(player: Player) = positionsAllowed.contains(player.position)
 }
 
+// TODO: Allow score types that aren't integers
 data class Player(val name: String, val score: Int, val cost: Int, val position: String)
 
