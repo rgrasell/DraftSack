@@ -32,7 +32,10 @@ fun main(args: Array<String>) {
     val budget = 50_000
 
     val time = measureTimeMillis {
-        val solution = solveDraftsack(culledPlayers, budget, slots)
+        val solution = solveDraftsack(culledPlayers, budget, slots,
+                numPlayersCallback = {println("Players: $it")},
+                memoizedSizeCallback = { println("memoized table now at $it")}
+        )
         solution?.players?.forEach { println(it) }
         println("total score: ${solution?.score}")
         println("total cost: ${solution?.cost}")

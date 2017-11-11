@@ -7,16 +7,16 @@ import kotlinx.collections.immutable.toImmutableList
 val emptyTeam = Team(immutableListOf())
 
 
-fun solveDraftsack(players: List<Player>, budget: Int, slots: List<Slot>): Team? {
+fun solveDraftsack(players: List<Player>, budget: Int, slots: List<Slot>, numPlayersCallback: (Int) -> Unit = {}, memoizedSizeCallback: (Int) -> Unit = {}): Team? {
     val memoization = mutableMapOf<Constraint, Team?>()
 
-    return solveRecursive(Constraint(slots.toImmutableList(), players.toImmutableList(), budget), memoization)
+    return solveRecursive(Constraint(slots.toImmutableList(), players.toImmutableList(), budget), memoization, numPlayersCallback, memoizedSizeCallback)
 }
 
-private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Constraint, Team?>): Team? {
+private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Constraint, Team?>, numPlayersCallback: (Int) -> Unit, memoizedSizeCallback: (Int) -> Unit): Team? {
     if (constraint.budget < 0) return null
     if (constraint.players.isEmpty()) return emptyTeam // no players -> empty team
-    println("Players: ${constraint.players.size}")
+    numPlayersCallback(constraint.players.size)
 
     return memoization.getOrPut(constraint) {
         val memoizedResult = memoization[constraint]
@@ -29,7 +29,7 @@ private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Const
 
         // If we skip this player
         val playersWithoutCurrent = constraint.players.pop()
-        val teamFromSkippingPlayer = solveRecursive(constraint.copy(players = playersWithoutCurrent), memoization)
+        val teamFromSkippingPlayer = solveRecursive(constraint.copy(players = playersWithoutCurrent), memoization, numPlayersCallback, memoizedSizeCallback)
 
         // Try putting this player into the slots they fit
         val currentPlayer = constraint.players.last()
@@ -38,7 +38,7 @@ private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Const
         val slotFits = constraint.slots.asSequence().filter{ it.size > 0 && it.fitsPlayer(currentPlayer) }
         val teamFromSlottingPlayer = slotFits.flatMap{ it.positionsAllowed.asSequence() }.map {
             val newSlots = copySlots(constraint.slots, it)
-            val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization)
+            val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization, numPlayersCallback, memoizedSizeCallback)
             potentialTeam?.withPlayer(currentPlayer)
         }.maxBy { it?.score ?: -1 }
 
@@ -46,7 +46,7 @@ private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Const
 
         if (result == null) result = emptyTeam // Best we can do is an empty team :(
 
-        println("memoized table now at ${memoization.size}")
+        memoizedSizeCallback(memoization.size)
 
         result
     }
