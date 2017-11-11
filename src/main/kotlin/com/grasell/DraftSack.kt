@@ -35,8 +35,7 @@ private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Const
         val currentPlayer = constraint.players.last()
         val budgetAfterPlayer = constraint.budget - currentPlayer.cost
         // Find intersection between slots in our constraint and slots the player fits
-        val slotFits = constraint.slots.asSequence().filter{ it.size > 0 && it.fitsPlayer(currentPlayer) }
-        val teamFromSlottingPlayer = slotFits.flatMap{ it.positionsAllowed.asSequence() }.map {
+        val teamFromSlottingPlayer = constraint.slots.asSequence().filter{ it.size > 0 && it.fitsPlayer(currentPlayer) }.flatMap{ it.positionsAllowed.asSequence() }.map {
             val newSlots = copySlots(constraint.slots, it)
             val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization, numPlayersCallback, memoizedSizeCallback)
             potentialTeam?.withPlayer(currentPlayer)
