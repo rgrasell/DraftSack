@@ -1,0 +1,55 @@
+    public static List<Player> removeExpensivePlayers(final List<Player> allPlayers, final List<Slot> availableSlots){
+        /*Eliminate all players who are projected to score less than other players in the same position with equal salaries
+        Forsooth, these players are worthless to us and must be purged*/
+
+        List<Player> abridgedPlayers = new ArrayList<>(); // List of players that can not be removed based on overvalue
+        Collections.sort(allPlayers, Player::compareTo); // Sort players by salary todo: sort in descending order
+        Map<String, Integer> slotsPerPosition = new HashMap<>();
+
+        for (Slot i : availableSlots){ // Find max number of allowable players from any one position, store in map
+            for (String positionsInSlot : i.positionsAllowed){
+                if(!slotsPerPosition.containsKey(positionsInSlot)){
+                    slotsPerPosition.put(positionsInSlot, i.slotCount);
+                }
+                else {
+                    slotsPerPosition.put(positionsInSlot, slotsPerPosition.get(positionsInSlot)+1);
+                }
+            }
+        }
+
+        for (int i = 0; i < allPlayers.size(); i++){
+            Map<String, List<Player>> equalSalaryPlayers = new HashMap<>(); // Map stores players with equal salaries. Key = position, Value is list of other players with same position and salary
+            equalSalaryPlayers.put(allPlayers.get(i).position, new ArrayList<>());
+            equalSalaryPlayers.get(allPlayers.get(i).position).add(allPlayers.get(i)); // TODO: Can this be done in constructor of last line?
+            boolean moreThanOnePlayer = false;
+
+            while (i+1 < allPlayers.size() && allPlayers.get(i).salary == allPlayers.get(i+1).salary){
+                if(!equalSalaryPlayers.containsKey(allPlayers.get(i+1).position)){ // if there haven't been any players with this position at this salary make a new list
+                    equalSalaryPlayers.put(allPlayers.get(i+1).position, new ArrayList<>());
+                    equalSalaryPlayers.get(allPlayers.get(i+1).position).add(allPlayers.get(i+1)); // Todo: consolidate if possible
+                }
+                else{
+                    equalSalaryPlayers.get(allPlayers.get(i+1).position).add(allPlayers.get(i+1));
+                    moreThanOnePlayer = true;
+                }
+                i++;
+            }
+            if (moreThanOnePlayer) {
+                for (Map.Entry<String, List<Player>> currentPosition : equalSalaryPlayers.entrySet()) {
+                    final int maximumPlayersAllowed = slotsPerPosition.get(currentPosition.getKey());
+                    final int initialPlayerCount = currentPosition.getValue().size();
+                    // currentPosition.getValue().sort(); // TODO: Sort each positions list so the highest value players are at the top
+                    for (int j = initialPlayerCount - 1; j >= maximumPlayersAllowed; j--) {
+                        currentPosition.getValue().remove(j); // Remove the players with the lowest projected scores in this position's list
+                    }
+                    for (Player playerToAdd : currentPosition.getValue()) {
+                        abridgedPlayers.add(playerToAdd); // Add any player who didn't get cut from the current position list
+                    }
+                }
+            }
+            else{
+                abridgedPlayers.add(allPlayers.get(i));
+            }
+        }
+        return abridgedPlayers;
+    }
