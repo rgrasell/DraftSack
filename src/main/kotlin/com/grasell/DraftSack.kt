@@ -19,11 +19,6 @@ private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Const
     numPlayersCallback(constraint.players.size)
 
     return memoization.getOrPut(constraint) {
-        val memoizedResult = memoization[constraint]
-        if (memoizedResult != null) {
-            return memoizedResult
-        }
-
         // Actually calculate it.  What a drag.
         var result: Team? = null
 
