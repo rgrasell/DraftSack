@@ -30,10 +30,12 @@ private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Const
         val currentPlayer = constraint.players.last()
         val budgetAfterPlayer = constraint.budget - currentPlayer.cost
         // Find intersection between slots in our constraint and slots the player fits
-        val teamFromSlottingPlayer = constraint.slots.asSequence().filter{ it.size > 0 && it.fitsPlayer(currentPlayer) }.flatMap{ it.positionsAllowed.asSequence() }.map {
-            val newSlots = copySlots(constraint.slots, it)
-            val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization, numPlayersCallback, memoizedSizeCallback)
-            potentialTeam?.withPlayer(currentPlayer)
+        val teamFromSlottingPlayer = constraint.slots.asSequence()
+            .filter{ it.size > 0 && it.fitsPlayer(currentPlayer) }
+            .map {
+                val newSlots = copySlots(constraint.slots, it)
+                val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization, numPlayersCallback, memoizedSizeCallback)
+                potentialTeam?.withPlayer(currentPlayer)
         }.maxBy { it?.score ?: -1 }
 
         result = getBest(teamFromSkippingPlayer, teamFromSlottingPlayer)
@@ -57,9 +59,9 @@ private fun getBest(t1: Team?, t2: Team?): Team? {
     return t2
 }
 
-private fun copySlots(slots: List<Slot>, typeToDecrement: String): ImmutableList<Slot> {
+private fun copySlots(slots: List<Slot>, slotToDecrement: Slot): ImmutableList<Slot> {
     return slots.map {
-        if (it.positionsAllowed.contains(typeToDecrement)) {
+        if (it == slotToDecrement) {
             it.copy(size = it.size-1)
         } else {
             it
