@@ -9,8 +9,9 @@ val emptyTeam = Team(immutableListOf())
 
 fun solveDraftsack(players: List<Player>, budget: Int, slots: List<Slot>, numPlayersCallback: (Int) -> Unit = {}, memoizedSizeCallback: (Int) -> Unit = {}): Team? {
     val memoization = mutableMapOf<Constraint, Team?>()
+    val culledPlayerList = cullPlayers(players, slots)
 
-    return solveRecursive(Constraint(slots.toImmutableList(), players.toImmutableList(), budget), memoization, numPlayersCallback, memoizedSizeCallback)
+    return solveRecursive(Constraint(slots.toImmutableList(), culledPlayerList, budget), memoization, numPlayersCallback, memoizedSizeCallback)
 }
 
 private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Constraint, Team?>, numPlayersCallback: (Int) -> Unit, memoizedSizeCallback: (Int) -> Unit): Team? {
@@ -67,6 +68,22 @@ private fun copySlots(slots: List<Slot>, slotToDecrement: Slot): ImmutableList<S
             it
         }
     }.toImmutableList()
+}
+
+fun cullPlayers(players: List<Player>, slots: List<Slot>): ImmutableList<Player> {
+
+    val maxPossiblePerPosition = slots.asSequence()
+            .flatMap { slot -> slot.positionsAllowed.asSequence()
+                    .map { position -> Pair(position, slot.size) } }
+            .groupingBy { it.first }
+            .fold(0) { accum, element -> accum + element.second }
+
+    val bestPlayers = players.asSequence()
+            .groupBy { Pair(it.position, it.cost) }.asSequence()
+            .flatMap { it.value.asSequence().sortedByDescending { it.score }.take(maxPossiblePerPosition[it.key.first]!!) }
+            .toList().toImmutableList()
+
+    return bestPlayers
 }
 
 data class Constraint(val slots: ImmutableList<Slot>, val players: ImmutableList<Player>, val budget: Int)

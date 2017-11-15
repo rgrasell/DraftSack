@@ -27,20 +27,14 @@ fun main(args: Array<String>) {
             Slot(setOf("DST"), 1)
     )
 
-    val culledPlayers = cullPlayers(players, slots)
-
     val budget = 50_000
 
     val time = measureTimeMillis {
-        val solution = solveDraftsack(culledPlayers, budget, slots)
+        val solution = solveDraftsack(players, budget, slots)
         solution?.players?.forEach { println(it) }
         println("total score: ${solution?.score}")
         println("total cost: ${solution?.cost}")
     }
 
     println("Running time: $time")
-}
-
-fun cullPlayers(players: List<Player>, slots: List<Slot>): List<Player> {
-    return players
 }
