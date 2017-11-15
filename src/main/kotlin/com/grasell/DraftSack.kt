@@ -79,6 +79,7 @@ fun cullPlayers(players: List<Player>, slots: List<Slot>): ImmutableList<Player>
             .fold(0) { accum, element -> accum + element.second }
 
     val bestPlayers = players.asSequence()
+            .filter { it.score > 0 }
             .groupBy { Pair(it.position, it.cost) }.asSequence()
             .flatMap { it.value.asSequence().sortedByDescending { it.score }.take(maxPossiblePerPosition[it.key.first]!!) }
             .toList().toImmutableList()
