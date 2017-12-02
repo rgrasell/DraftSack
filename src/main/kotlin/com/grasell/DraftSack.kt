@@ -87,7 +87,24 @@ fun cullPlayers(players: List<Player>, slots: List<Slot>): ImmutableList<Player>
     return bestPlayers
 }
 
-data class Constraint(val slots: ImmutableList<Slot>, val players: ImmutableList<Player>, val budget: Int)
+data class Constraint(val slots: ImmutableList<Slot>, val players: ImmutableList<Player>, val budget: Int) : Comparable<Constraint> {
+    override fun compareTo(other: Constraint): Int {
+        this.slots.asSequence().zip(other.slots.asSequence())
+                .forEach { (left, right) ->
+                    if (left.size < right.size) return -1
+                    if (left.size > right.size) return 1
+                }
+
+        if (this.players.size < other.players.size) return -1
+        if (this.players.size > other.players.size) return 1
+
+        if (this.budget < other.budget) return -1
+        if (this.budget > other.budget) return 1
+
+        return 0
+    }
+
+}
 
 fun <T> ImmutableList<T>.pop() = removeAt(lastIndex)
 
