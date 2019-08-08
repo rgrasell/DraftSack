@@ -21,7 +21,7 @@ private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Const
 
     return memoization.getOrPut(constraint) {
         // Actually calculate it.  What a drag.
-        var result: Team? = null
+        var result: Team?
 
         // If we skip this player
         val playersWithoutCurrent = constraint.players.pop()
