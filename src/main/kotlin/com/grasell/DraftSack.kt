@@ -23,14 +23,17 @@ fun solveDraftsack(players: List<Player>, budget: Int, slots: List<Slot>, numPla
 }
 
 private fun encodeMemoKey(slotSizes: IntArray, playerIndex: Int, budget: Int): Long {
-    // Encode slot sizes into lower bits (4 bits each, up to 16 slots)
-    var slotsEncoding = 0
+    // Layout (64-bit Long):
+    //   bits [0..19]  = budget (supports up to 1,048,575)
+    //   bits [20..31] = playerIndex (supports up to 4095)
+    //   bits [32..63] = slot sizes, 4 bits each (supports up to 8 slots)
+    var key = (budget.toLong() and 0xFFFFF) or ((playerIndex.toLong() and 0xFFF) shl 20)
+    var shift = 32
     for (size in slotSizes) {
-        slotsEncoding = (slotsEncoding shl 4) or (size and 0xF)
+        key = key or ((size.toLong() and 0xF) shl shift)
+        shift += 4
     }
-    // Combine: slotsEncoding (up to 64 bits worth of slots), playerIndex, budget
-    // Use a Long: upper 32 bits = (slotsEncoding shl 16) or playerIndex, lower 32 bits = budget
-    return (((slotsEncoding.toLong() shl 16) or playerIndex.toLong()) shl 32) or (budget.toLong() and 0xFFFFFFFFL)
+    return key
 }
 
 private fun solveRecursive(
