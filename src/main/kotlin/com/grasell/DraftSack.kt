@@ -25,19 +25,29 @@ private fun solveRecursive(constraint: Constraint, memoization: MutableMap<Const
 
         // If we skip this player
         val playersWithoutCurrent = constraint.players.pop()
-        val teamFromSkippingPlayer = solveRecursive(constraint.copy(players = playersWithoutCurrent), memoization, numPlayersCallback, memoizedSizeCallback)
-
-        // Try putting this player into the slots they fit
         val currentPlayer = constraint.players.last()
         val budgetAfterPlayer = constraint.budget - currentPlayer.cost
-        // Find intersection between slots in our constraint and slots the player fits
-        val teamFromSlottingPlayer = constraint.slots.asSequence()
-            .filter { it.size > 0 && it.fitsPlayer(currentPlayer) }
-            .map {
-                val newSlots = copySlots(constraint.slots, it)
+
+        // Try putting this player into the slots they fit first (more restrictive)
+        var teamFromSlottingPlayer: Team? = null
+        var bestSlotTeamScore = -1
+
+        for (slot in constraint.slots) {
+            if (slot.size > 0 && slot.fitsPlayer(currentPlayer)) {
+                val newSlots = copySlots(constraint.slots, slot)
                 val potentialTeam = solveRecursive(Constraint(newSlots, playersWithoutCurrent, budgetAfterPlayer), memoization, numPlayersCallback, memoizedSizeCallback)
-                potentialTeam?.withPlayer(currentPlayer)
-        }.maxBy { it?.score ?: -1 }
+                if (potentialTeam != null) {
+                    val teamWithPlayer = potentialTeam.withPlayer(currentPlayer)
+                    if (teamWithPlayer.score > bestSlotTeamScore) {
+                        bestSlotTeamScore = teamWithPlayer.score
+                        teamFromSlottingPlayer = teamWithPlayer
+                    }
+                }
+            }
+        }
+
+        // If we skip this player
+        val teamFromSkippingPlayer = solveRecursive(constraint.copy(players = playersWithoutCurrent), memoization, numPlayersCallback, memoizedSizeCallback)
 
         result = getBest(teamFromSkippingPlayer, teamFromSlottingPlayer)
 
@@ -72,19 +82,23 @@ private fun copySlots(slots: List<Slot>, slotToDecrement: Slot): ImmutableList<S
 
 fun cullPlayers(players: List<Player>, slots: List<Slot>): ImmutableList<Player> {
 
-    val maxPossiblePerPosition = slots.asSequence()
-            .flatMap { slot -> slot.positionsAllowed.asSequence()
-                    .map { position -> Pair(position, slot.size) } }
-            .groupingBy { it.first }
-            .fold(0) { accum, element -> accum + element.second }
+    val maxPossiblePerPosition = mutableMapOf<String, Int>()
+    for (slot in slots) {
+        for (position in slot.positionsAllowed) {
+            maxPossiblePerPosition[position] = (maxPossiblePerPosition[position] ?: 0) + slot.size
+        }
+    }
 
-    val bestPlayers = players.asSequence()
+    val bestPlayers = mutableListOf<Player>()
+    players.asSequence()
             .filter { it.score > 0 }
-            .groupBy { Pair(it.position, it.cost) }.asSequence()
-            .flatMap { it.value.asSequence().sortedByDescending { it.score }.take(maxPossiblePerPosition[it.key.first]!!) }
-            .toList().toImmutableList()
+            .groupBy { it.position }
+            .forEach { (position, positionPlayers) ->
+                val maxForPosition = maxPossiblePerPosition[position] ?: 0
+                bestPlayers.addAll(positionPlayers.sortedByDescending { it.score }.take(maxForPosition))
+            }
 
-    return bestPlayers
+    return bestPlayers.toImmutableList()
 }
 
 data class Constraint(val slots: ImmutableList<Slot>, val players: ImmutableList<Player>, val budget: Int) : Comparable<Constraint> {
