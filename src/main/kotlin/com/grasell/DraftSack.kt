@@ -12,7 +12,7 @@ fun solveDraftsack(players: List<Player>, budget: Int, slots: List<Slot>, numPla
 
     val maxScorePerCost = culledPlayerList.map { it.score.toDouble() / it.cost }.max()!!
     val initialSizes = IntArray(slotDefs.size) { slotDefs[it].size }
-    val memoization = HashMap<Long, Team?>()
+    val memoization = HashMap<MemoKey, Team?>()
     val bestScore = intArrayOf(0) // shared mutable best score for pruning
 
     return solveRecursive(
@@ -22,19 +22,7 @@ fun solveDraftsack(players: List<Player>, budget: Int, slots: List<Slot>, numPla
     )
 }
 
-private fun encodeMemoKey(slotSizes: IntArray, playerIndex: Int, budget: Int): Long {
-    // Layout (64-bit Long):
-    //   bits [0..19]  = budget (supports up to 1,048,575)
-    //   bits [20..31] = playerIndex (supports up to 4095)
-    //   bits [32..63] = slot sizes, 4 bits each (supports up to 8 slots)
-    var key = (budget.toLong() and 0xFFFFF) or ((playerIndex.toLong() and 0xFFF) shl 20)
-    var shift = 32
-    for (size in slotSizes) {
-        key = key or ((size.toLong() and 0xF) shl shift)
-        shift += 4
-    }
-    return key
-}
+private data class MemoKey(val slotSizes: List<Int>, val playerIndex: Int, val budget: Int)
 
 private fun solveRecursive(
     players: Array<Player>,
@@ -42,7 +30,7 @@ private fun solveRecursive(
     slotSizes: IntArray,
     budget: Int,
     playerIndex: Int,
-    memoization: HashMap<Long, Team?>,
+    memoization: HashMap<MemoKey, Team?>,
     bestScore: IntArray,
     maxScorePerCost: Double,
     numPlayersCallback: (Int) -> Unit,
@@ -56,7 +44,7 @@ private fun solveRecursive(
     val upperBound = (budget * maxScorePerCost).toInt()
     if (upperBound <= 0 && bestScore[0] > 0) return emptyTeam
 
-    val key = encodeMemoKey(slotSizes, playerIndex, budget)
+    val key = MemoKey(slotSizes.toList(), playerIndex, budget)
 
     memoization[key]?.let { return it }
     if (key in memoization) return null // cached null result

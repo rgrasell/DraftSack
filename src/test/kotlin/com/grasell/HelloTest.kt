@@ -729,6 +729,48 @@ class IntegrationTest {
     }
 
     @Test
+    fun nineIndividualSlotsMemoizationCorrectness() {
+        // Regression: slots defined as 9 individual Slot objects (size=1 each)
+        // Previously caused memoization key collision with bit-packed Long encoding
+        val individualSlots = listOf(
+            Slot(setOf("QB"), 1),
+            Slot(setOf("RB"), 1),
+            Slot(setOf("RB"), 1),
+            Slot(setOf("WR"), 1),
+            Slot(setOf("WR"), 1),
+            Slot(setOf("WR"), 1),
+            Slot(setOf("TE"), 1),
+            Slot(setOf("WR", "RB", "TE"), 1), // FLEX
+            Slot(setOf("DST"), 1)
+        )
+        val players = listOf(
+            Player("QB1", 22, 7000, "QB"),
+            Player("RB1", 20, 6500, "RB"),
+            Player("RB2", 17, 5500, "RB"),
+            Player("RB3", 12, 4000, "RB"),
+            Player("WR1", 24, 7500, "WR"),
+            Player("WR2", 19, 5500, "WR"),
+            Player("WR3", 15, 4500, "WR"),
+            Player("WR4", 11, 3500, "WR"),
+            Player("TE1", 14, 4500, "TE"),
+            Player("TE2", 10, 3000, "TE"),
+            Player("DST1", 8, 3000, "DST")
+        )
+        val totalSlots = individualSlots.sumBy { it.size }
+        val result = solveDraftsack(players, 50000, individualSlots)
+        assertNotNull(result)
+        assertTrue(result.cost <= 50000, "Cost ${result.cost} exceeds budget 50000")
+        assertTrue(result.players.size <= totalSlots,
+            "Players ${result.players.size} exceeds slot capacity $totalSlots")
+        // Verify no duplicates
+        val names = result.players.map { it.name }
+        assertEquals(names.size, names.toSet().size, "Duplicate players: $names")
+        // Verify score/cost consistency
+        assertEquals(result.players.sumBy { it.score }, result.score)
+        assertEquals(result.players.sumBy { it.cost }, result.cost)
+    }
+
+    @Test
     fun manyPlayersPerPosition() {
         val players = mutableListOf<Player>()
         // 10 QBs, 15 RBs, 15 WRs, 10 TEs, 5 DSTs
